@@ -16,6 +16,7 @@ from thermofft.tui.screens.progress import ProgressScreen
 class MainScreen(Screen):
     BINDINGS = [
         Binding("r", "run", "Run"),
+        Binding("l", "live", "Live"),
         Binding("h", "history", "History"),
     ]
 
@@ -54,8 +55,10 @@ class MainScreen(Screen):
                     yield Input(value="27", id="oor_high")
             with Horizontal():
                 yield Button("Run analysis", variant="primary", id="btn_run")
+                yield Button("Live stream", id="btn_live")
                 yield Button("History", id="btn_history")
-        yield Static("[bold]r[/bold] — запустить, [bold]h[/bold] — история, [bold]q[/bold] — выход",
+        yield Static("[bold]r[/bold] — запустить, [bold]l[/bold] — live, "
+                     "[bold]h[/bold] — история, [bold]q[/bold] — выход",
                      id="footer-hint")
         yield Footer()
 
@@ -95,8 +98,14 @@ class MainScreen(Screen):
         from thermofft.tui.screens.history import HistoryScreen
         self.app.push_screen(HistoryScreen(db_path=self.db_path))
 
+    def action_live(self) -> None:
+        from thermofft.tui.screens.live import LiveScreen
+        self.app.push_screen(LiveScreen())
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn_run":
             self.action_run()
         elif event.button.id == "btn_history":
             self.action_history()
+        elif event.button.id == "btn_live":
+            self.action_live()

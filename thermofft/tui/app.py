@@ -7,6 +7,7 @@ from textual.app import App
 from textual.binding import Binding
 
 from thermofft.tui.screens.history import HistoryScreen
+from thermofft.tui.screens.live import LiveScreen
 from thermofft.tui.screens.main import MainScreen
 
 
@@ -23,6 +24,7 @@ class ThermoFFTApp(App):
         Binding("q", "quit", "Quit"),
         Binding("h", "open_history", "History"),
         Binding("m", "open_main", "Main"),
+        Binding("l", "open_live", "Live"),
     ]
 
     def __init__(self, db_path: Path) -> None:
@@ -39,3 +41,6 @@ class ThermoFFTApp(App):
     def action_open_main(self) -> None:
         self.pop_screen()
         self.push_screen(MainScreen(db_path=self.db_path))
+
+    def action_open_live(self) -> None:
+        self.push_screen(LiveScreen())

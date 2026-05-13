@@ -14,6 +14,7 @@ CLI + TUI приложение на Python: загружает временны�
 - [Быстрый старт](#быстрый-старт)
 - [Команды CLI](#команды-cli)
 - [TUI режим](#tui-режим)
+- [Реал-тайм режим (stream)](#реал-тайм-режим-stream)
 - [Формат входных данных](#формат-входных-данных)
 - [Артефакты прогона](#артефакты-прогона)
 - [Параметры конфигурации](#параметры-конфигурации)
@@ -135,6 +136,7 @@ thermofft batch data/samples --interval 300 --once
 | `thermofft similar <run_uid> [--top N]` | Топ-N похожих прогонов |
 | `thermofft export <run_uid> --to <dir>` | Скопировать артефакты |
 | `thermofft batch <dir> [--interval N] [--once]` | Watch-folder режим |
+| `thermofft stream [--source simulate\|tail] [--input <csv>]` | Реал-тайм обработка с обновлением графиков |
 | `thermofft tui` | Запустить интерактивный Textual TUI |
 
 Все команды: `thermofft <cmd> --help` для полного списка опций.
@@ -157,7 +159,50 @@ thermofft tui
   - Artifacts — пути ко всем сгенерированным файлам
 - **History** — все прогоны из SQLite.
 
-Горячие клавиши: `r` — Run, `h` — History, `p` — открыть папку с графиками, `e` — открыть PDF, `Esc` — назад, `q` — выход.
+Горячие клавиши: `r` — Run, `l` — Live, `h` — History, `p` — открыть папку с графиками, `e` — открыть PDF, `Esc` — назад, `q` — выход.
+
+## Реал-тайм режим (stream)
+
+Команда `thermofft stream` запускает скользящее окно FFT/метрик и **перерисовывает графики на каждом тике**. Два источника данных:
+
+- `--source simulate` — встроенный генератор: sin(24h) + шум + лаг in vs out. Эмулируемое время ускоряется параметром `--speedup` (например `--speedup 120` — за 1 секунду реального времени проходит 2 минуты внутреннего).
+- `--source tail` — наблюдение за CSV-файлом, который дописывают другие процессы (внешний IoT-логгер). Поллинг с `--tick-interval`.
+
+```bash
+# Демо: эмуляция 1 час внутреннего времени за 1 секунду, 30 тиков, окно 24ч
+thermofft stream --source simulate --speedup 3600 --tick-interval 1 \
+                 --max-ticks 30 --window 24h --out-dir runs/live
+
+# Tail внешнего CSV (например, файл, в который пишет MQTT-bridge)
+thermofft stream --source tail --input /tmp/sensors.csv --tick-interval 2
+```
+
+На каждом тике:
+- агрегируется скользящее окно (`--window`) с ресемплингом (`--resample`)
+- считаются текущие spectrum (top-K циклов), amplitude, attenuation, Pearson, lag, OOR%, события
+- перезаписываются `runs/live/live_timeseries.png` и `runs/live/live_spectrum.png` (300 dpi)
+- в консоли rich-таблица обновляется в режиме `Live`
+
+### Параметры `stream`
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `--source` | `simulate` | `simulate` или `tail` |
+| `--input <csv>` | _none_ | CSV для `tail` |
+| `--window` | `24h` | Размер скользящего окна |
+| `--resample` | `1min` | Шаг внутри окна |
+| `--tick-interval` | `1.0` | Период перерисовки графиков, сек |
+| `--step` | `60` | (simulate) шаг эмулируемого времени, сек |
+| `--speedup` | `120` | (simulate) ускорение относительно реального времени |
+| `--max-ticks` | _∞_ | Лимит количества тиков |
+| `--out-dir` | `runs/live` | Куда писать `live_*.png` |
+| `--top-k` | `5` | Сколько спектральных пиков выделять |
+
+Ctrl+C — корректная остановка.
+
+### TUI-аналог
+
+В TUI клавиша `l` (Live) открывает экран с двумя ASCII-sparkline (T_in / T_out амплитуды) и live-метриками. Кнопки `Start (s)` / `Stop (x)` управляют потоком. Источник, окно, tick и speedup задаются прямо на экране.
 
 ## Формат входных данных
 

@@ -20,7 +20,7 @@ def _force_utf8_stdio() -> None:
 
 _force_utf8_stdio()
 
-from thermofft.cli import analyze_cmd, batch_cmd, export_cmd, history_cmd
+from thermofft.cli import analyze_cmd, batch_cmd, export_cmd, history_cmd, stream_cmd
 from thermofft.config import AppConfig
 from thermofft.logging_setup import setup_logging
 from thermofft.storage import db
@@ -49,6 +49,7 @@ cli.add_command(history_cmd.show)
 cli.add_command(history_cmd.similar)
 cli.add_command(export_cmd.export)
 cli.add_command(batch_cmd.batch)
+cli.add_command(stream_cmd.stream)
 
 
 @cli.command(name="tui", help="Запустить интерактивный TUI (Textual).")
